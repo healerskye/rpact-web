@@ -38,6 +38,7 @@ jobs:
           context: ./api
           push: true
           tags: ghcr.io/${{ github.repository }}/rpact-api:latest
+          platforms: linux/amd64
           no-cache: true
 
       - name: Deploy to Fly.io (fire and forget)

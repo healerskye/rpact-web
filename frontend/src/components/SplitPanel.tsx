@@ -9,7 +9,7 @@ export function SplitPanel({ left, right }: SplitPanelProps) {
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: inputs */}
-      <aside className="w-96 shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5">
+      <aside className="w-full max-w-sm lg:max-w-md xl:max-w-lg shrink-0 overflow-y-auto border-r border-slate-200 bg-white p-5">
         {left}
       </aside>
       {/* Right: results */}

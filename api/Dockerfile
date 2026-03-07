@@ -19,4 +19,4 @@ COPY plumber.R .
 EXPOSE 8000
 
 # Use PORT env var (Render sets this dynamically)
-CMD ["Rscript", "-e", "port <- as.integer(Sys.getenv('PORT', '8000')); plumber::plumb('plumber.R')$run(host='0.0.0.0', port=port)"]
+CMD ["Rscript", "-e", "port <- as.integer(Sys.getenv('PORT', '8000')); pr <- plumber::plumb('plumber.R'); pr$run(host='0.0.0.0', port=port)"]

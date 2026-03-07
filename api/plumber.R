@@ -1,6 +1,14 @@
 library(plumber)
-library(rpact)
 library(jsonlite)
+
+# Lazy-load rpact on first use to avoid startup timeout
+.rpact_loaded <- FALSE
+.ensure_rpact <- function() {
+  if (!.rpact_loaded) {
+    library(rpact)
+    .rpact_loaded <<- TRUE
+  }
+}
 
 `%||%` <- function(x, y) if (!is.null(x) && length(x) > 0 && !identical(x, "")) x else y
 
@@ -42,6 +50,7 @@ function(req, res) {
 }
 
 .buildDesign <- function(body) {
+  .ensure_rpact()
   kMax         <- .toInt(body$kMax, 3L)
   alpha        <- .toNum(body$alpha) %||% 0.025
   beta         <- .toNum(body$beta)  %||% 0.2
@@ -339,6 +348,6 @@ function(req, res) {
 #* @get /health
 #* @serializer unboxedJSON
 function() {
-  list(status = "ok", rpact_version = as.character(packageVersion("rpact")),
+  list(status = "ok",
        time = format(Sys.time(), tz = "UTC", usetz = TRUE))
 }

@@ -28,6 +28,14 @@ jobs:
       - name: Install flyctl
         run: curl -fsSL https://fly.io/install.sh | sh
 
+      - name: Build image locally
+        run: docker build --platform linux/amd64 -t rpact-api:local ./api
+
+      - name: Smoke test - verify R packages load
+        run: |
+          docker run --rm --platform linux/amd64 rpact-api:local \
+            Rscript -e "library(plumber); library(rpact); cat('OK\n')"
+
       - name: Destroy existing machines (clear crash loop)
         run: |
           export PATH="$HOME/.fly/bin:$PATH"
@@ -42,16 +50,9 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Build locally and deploy to Fly.io
-        # Build on GitHub Actions (7GB RAM, no timeout) then push directly to Fly.io
-        # This avoids GHCR auth issues - flyctl handles the image transfer itself
+      - name: Deploy to Fly.io
         run: |
           export PATH="$HOME/.fly/bin:$PATH"
-
-          # Build the image locally on the GH runner
-          docker build --platform linux/amd64 -t rpact-api:local ./api
-
-          # Use flyctl to deploy from local image (flyctl pushes it to Fly.io registry)
           flyctl deploy \
             --config api/fly.toml \
             --local-only \
@@ -59,7 +60,6 @@ jobs:
             --ha=false \
             --detach \
             2>&1 || true
-
           echo "Deploy triggered."
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

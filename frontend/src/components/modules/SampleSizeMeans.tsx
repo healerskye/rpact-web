@@ -17,7 +17,7 @@ const DESIGN_TYPES = [
 export function SampleSizeMeans() {
   const [params, setParams] = useState({
     kMax: 3, alpha: 0.025, beta: 0.2, typeOfDesign: "OF", sided: 1,
-    meanRatio: 0.5, stDev: 1, allocationRatioPlanned: 1,
+    alternative: 0.5, stDev: 1, allocationRatioPlanned: 1,
   });
   const [result, setResult] = useState<ApiResponse<SampleSizeResult> | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,7 +66,7 @@ export function SampleSizeMeans() {
 
       <div className="flex flex-col gap-3">
         <p className="text-xs font-semibold text-slate-600">Endpoint Parameters</p>
-        <InputField label="Mean Ratio (treatment / control)" name="meanRatio" value={params.meanRatio} onChange={set("meanRatio")} step={0.01} helpText="Effect size: ratio of group means" />
+        <InputField label="Mean Difference (treatment − control)" name="alternative" value={params.alternative} onChange={set("alternative")} step={0.01} helpText="Effect size: difference in group means" />
         <InputField label="Standard Deviation" name="stDev" value={params.stDev} onChange={set("stDev")} min={0.01} step={0.1} />
         <InputField label="Allocation Ratio" name="allocationRatioPlanned" value={params.allocationRatioPlanned} onChange={set("allocationRatioPlanned")} min={0.1} step={0.1} helpText="n(treatment) / n(control)" />
       </div>

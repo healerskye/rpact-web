@@ -31,8 +31,14 @@ jobs:
 
       - name: Smoke test - verify R packages load
         run: |
-          docker run --rm rpact-api:local \
-            Rscript -e "library(plumber); library(rpact); cat('OK\n')"
+          echo "=== R library paths ==="
+          docker run --rm rpact-api:local Rscript -e ".libPaths()"
+          echo "=== Installed packages ==="
+          docker run --rm rpact-api:local Rscript -e "ip <- installed.packages(); cat(ip[,'Package'], sep='\n')"
+          echo "=== Load plumber ==="
+          docker run --rm rpact-api:local Rscript -e "library(plumber); cat('plumber OK\n')"
+          echo "=== Load rpact ==="
+          docker run --rm rpact-api:local Rscript -e "library(rpact); cat('rpact OK\n')"
 
       - name: Destroy existing machines (clear crash loop)
         run: |

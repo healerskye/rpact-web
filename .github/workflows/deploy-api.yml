@@ -41,12 +41,26 @@ jobs:
           platforms: linux/amd64
           no-cache: true
 
-      - name: Deploy to Fly.io (fire and forget)
-        # flyctl times out waiting for health checks from GH runners due to network issues.
-        # We deploy and don't wait - the machine will start successfully on Fly.io side.
+      - name: Deploy to Fly.io
         run: |
           curl -fsSL https://fly.io/install.sh | sh
           export PATH="$HOME/.fly/bin:$PATH"
+
+          # Destroy all existing machines so flyctl creates a fresh one
+          # (avoids stale machines stuck in crash-restart loop)
+          MACHINES=$(flyctl machines list --app rpact-api --json 2>/dev/null | python3 -c "
+          import json,sys
+          data=json.load(sys.stdin)
+          print(' '.join([m['id'] for m in data]))" 2>/dev/null || echo "")
+          for m in $MACHINES; do
+            echo "Destroying machine $m"
+            flyctl machines destroy "$m" --app rpact-api --force 2>&1 || true
+          done
+
+          # Log Docker into GHCR so flyctl can reference the credentials
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Deploy fresh machine with new image
           flyctl deploy \
             --config api/fly.toml \
             --image ghcr.io/${{ github.repository }}/rpact-api:latest \

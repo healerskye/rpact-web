@@ -1,4 +1,4 @@
-name: Deploy R Plumber API to Posit Connect
+name: Deploy R Plumber API to Render
 
 on:
   push:
@@ -13,31 +13,45 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy R Plumber API
+    name: Trigger Render Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: "4.4"
-      - name: Install system deps
+      - name: Trigger Render deploy
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
-      - name: Install renv & restore
-        working-directory: ./api
+          curl -s -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": "do_not_clear"}' | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          deploy = d.get('deploy', d)
+          print('Deploy ID:', deploy.get('id'))
+          print('Status:', deploy.get('status'))
+          "
+
+      - name: Wait for deploy to complete
         run: |
-          Rscript -e 'install.packages("renv", repos = "https://cloud.r-project.org")'
-          Rscript -e 'renv::restore()'
-      - name: Deploy via rsconnect
-        working-directory: ./api
-        run: |
-          Rscript -e '
-            install.packages("rsconnect", repos = "https://cloud.r-project.org")
-            rsconnect::addConnectServer(url = Sys.getenv("POSIT_CONNECT_URL"), name = "posit-connect")
-            rsconnect::connectApiUser(account = "rpact-api", server = "posit-connect", apiKey = Sys.getenv("POSIT_CONNECT_API_KEY"))
-            rsconnect::deployAPI(api = ".", server = "posit-connect", appName = "rpact-api", forceUpdate = TRUE)
-          '
-        env:
-          POSIT_CONNECT_URL: ${{ secrets.POSIT_CONNECT_URL }}
-          POSIT_CONNECT_API_KEY: ${{ secrets.POSIT_CONNECT_API_KEY }}
+          echo "Waiting for Render build (R + rpact install takes ~8 min)..."
+          for i in $(seq 1 40); do
+            sleep 30
+            STATUS=$(curl -s \
+              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=1" \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              -H "Accept: application/json" | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin)
+          print(d[0]['deploy']['status'] if d else 'unknown')
+          ")
+            echo "  [$i/40] Status: $STATUS"
+            if [ "$STATUS" = "live" ]; then
+              echo "Deploy successful!"
+              exit 0
+            elif [ "$STATUS" = "build_failed" ] || [ "$STATUS" = "deactivated" ]; then
+              echo "Deploy failed with status: $STATUS"
+              exit 1
+            fi
+          done
+          echo "Timed out waiting for deploy"
+          exit 1

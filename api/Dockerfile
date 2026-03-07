@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 rocker/r-ver:4.4
+FROM rocker/r-ver:4.4
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,14 +8,17 @@ RUN apt-get update && apt-get install -y \
     libsodium-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install R packages
-RUN R -e "install.packages('jsonlite', repos='https://cloud.r-project.org')"
-RUN R -e "install.packages('plumber', repos='https://cloud.r-project.org')"
-RUN R -e "install.packages('rpact', repos='https://cloud.r-project.org')"
+# Install R packages - error on failure
+RUN R -e "options(warn=2); install.packages('jsonlite', repos='https://cloud.r-project.org', dependencies=TRUE)"
+RUN R -e "options(warn=2); install.packages('plumber', repos='https://cloud.r-project.org', dependencies=TRUE)"
+RUN R -e "options(warn=2); install.packages('rpact', repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+# Verify packages installed correctly
+RUN R -e "library(jsonlite); library(plumber); library(rpact); cat('All packages OK\n')"
 
 WORKDIR /api
 COPY plumber.R .
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["Rscript", "-e", "port <- as.integer(Sys.getenv('PORT', '8000')); plumber::plumb('plumber.R')$run(host='0.0.0.0', port=port)"]
+CMD ["Rscript", "-e", "port <- as.integer(Sys.getenv('PORT', '8080')); plumber::plumb('plumber.R')$run(host='0.0.0.0', port=port)"]

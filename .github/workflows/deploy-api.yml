@@ -22,18 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Install flyctl
         run: curl -fsSL https://fly.io/install.sh | sh
 
-      - name: Build image locally
-        run: docker build --platform linux/amd64 -t rpact-api:local ./api
+      - name: Build image (standard docker, no buildx)
+        # Use plain docker build so the image is available locally for smoke test and flyctl
+        run: docker build -t rpact-api:local ./api
 
       - name: Smoke test - verify R packages load
         run: |
-          docker run --rm --platform linux/amd64 rpact-api:local \
+          docker run --rm rpact-api:local \
             Rscript -e "library(plumber); library(rpact); cat('OK\n')"
 
       - name: Destroy existing machines (clear crash loop)

@@ -348,6 +348,5 @@ function(req, res) {
 #* @get /health
 #* @serializer unboxedJSON
 function() {
-  list(status = "ok", rpact_version = as.character(packageVersion("rpact")),
-       time = format(Sys.time(), tz = "UTC", usetz = TRUE))
+  list(status = "ok", time = format(Sys.time(), tz = "UTC", usetz = TRUE))
 }

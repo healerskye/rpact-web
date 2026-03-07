@@ -65,7 +65,7 @@ function ResultPanel({ result }: { result: ApiResponse<unknown> | null }) {
           ))}
         </div>
       )}
-      {tableData.length > 0 && <ResultTable data={tableData} caption="Results by Stage" />}
+      {tableData.length > 0 && <ResultTable data={tableData as Record<string, string | number | number[]>[]} caption="Results by Stage" />}
       {chartData.length > 0 && <ResultChart data={chartData} yLabel={chartLabel} title={`${chartLabel} by Stage`} />}
       {result.rCode && <CodeBlock code={result.rCode} />}
     </div>

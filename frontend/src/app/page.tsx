@@ -52,7 +52,7 @@ function ResultPanel({ result }: { result: ApiResponse<unknown> | null }) {
     : chartKey === "overallReject" ? "Rejection Rate" : "Value";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 min-w-0 w-full">
       {scalars.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           {scalars.slice(0, 4).map(([key, val]) => (

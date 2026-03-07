@@ -13,7 +13,7 @@ export function SplitPanel({ left, right }: SplitPanelProps) {
         {left}
       </aside>
       {/* Right: results */}
-      <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 p-6">
         {right}
       </main>
     </div>

@@ -10,7 +10,7 @@ export function ResultTable({ data, caption }: ResultTableProps) {
   const keys = Object.keys(data[0]);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200">
+    <div className="w-full overflow-x-auto rounded-lg border border-slate-200">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
         {caption && (
           <caption className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50">

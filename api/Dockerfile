@@ -13,6 +13,9 @@ RUN R -e "install.packages('jsonlite', repos='https://cloud.r-project.org')"
 RUN R -e "install.packages('plumber', repos='https://cloud.r-project.org')"
 RUN R -e "install.packages('rpact', repos='https://cloud.r-project.org')"
 
+# Warm up the R package cache so library() calls are faster at runtime
+RUN R -e "library(jsonlite); library(plumber); cat('plumber+jsonlite OK\n')"
+
 WORKDIR /api
 COPY plumber.R .
 

@@ -1,6 +1,16 @@
 library(plumber)
-library(rpact)
 library(jsonlite)
+
+# rpact is heavy — load lazily on first request so plumber can bind the port fast
+.rpact_loaded <- FALSE
+.ensure_rpact <- function() {
+  if (!.rpact_loaded) {
+    cat("Loading rpact...\n")
+    library(rpact)
+    .rpact_loaded <<- TRUE
+    cat("rpact loaded.\n")
+  }
+}
 
 `%||%` <- function(x, y) if (!is.null(x) && length(x) > 0 && !identical(x, "")) x else y
 
@@ -42,6 +52,7 @@ function(req, res) {
 }
 
 .buildDesign <- function(body) {
+  .ensure_rpact()
   kMax         <- .toInt(body$kMax, 3L)
   alpha        <- .toNum(body$alpha) %||% 0.025
   beta         <- .toNum(body$beta)  %||% 0.2

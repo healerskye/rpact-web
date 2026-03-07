@@ -1,0 +1,87 @@
+name: Claude AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: code-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Claude AI Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} > /tmp/pr_diff.txt
+          python3 -c "
+          with open('/tmp/pr_diff.txt') as f: c = f.read()
+          if len(c) > 30000: c = c[:30000] + '\n\n[... truncated ...]'
+          with open('/tmp/pr_diff.txt', 'w') as f: f.write(c)
+          "
+
+      - name: Call Claude API
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 - <<'EOF'
+          import os, json, urllib.request, urllib.error, sys
+
+          with open("/tmp/pr_diff.txt") as f:
+              diff = f.read()
+
+          system = """You review PRs for rpact-web (Next.js + R Plumber wrapping the rpact R package).
+          Check: (1) rpact function call correctness, (2) input validation, (3) error handling, (4) TypeScript types, (5) security.
+          Be concise. Only flag real issues."""
+
+          payload = {
+              "model": "claude-sonnet-4-6",
+              "max_tokens": 1024,
+              "system": system,
+              "messages": [{"role": "user", "content": f"<diff>\n{diff}\n</diff>"}],
+          }
+          req = urllib.request.Request(
+              "https://api.anthropic.com/v1/messages",
+              data=json.dumps(payload).encode(),
+              headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=60) as resp:
+                  review = json.loads(resp.read())["content"][0]["text"]
+          except urllib.error.HTTPError as e:
+              review = f"Claude review unavailable (HTTP {e.code}). Please review manually."
+          with open("/tmp/review.txt", "w") as f:
+              f.write(review)
+          EOF
+
+      - name: Post PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REVIEW=$(cat /tmp/review.txt)
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          BODY="## Claude AI Code Review
+          > Model: claude-sonnet-4-6 | PR #${PR}
+
+          ${REVIEW}
+
+          ---
+          *Auto-generated — use your own judgment before merging.*"
+
+          gh api repos/$REPO/issues/$PR/comments \
+            --method POST \
+            --field body="$BODY"

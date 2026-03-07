@@ -1,0 +1,26 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+.env
+.env.*
+!.env.example
+npm-debug.log*
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+renv/local/
+renv/staging/
+*.Rout
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright
+tests/test-results/
+tests/playwright-report/

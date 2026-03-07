@@ -1,0 +1,9 @@
+Package: rpact-api
+Title: rpact Plumber API
+Version: 0.1.0
+Depends:
+  R (>= 4.2.0)
+Imports:
+  plumber (>= 1.2.0),
+  rpact (>= 4.0.0),
+  jsonlite (>= 1.8.0)

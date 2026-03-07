@@ -1,0 +1,43 @@
+name: Deploy R Plumber API to Posit Connect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - ".github/workflows/deploy-api.yml"
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy R Plumber API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4"
+      - name: Install system deps
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+      - name: Install renv & restore
+        working-directory: ./api
+        run: |
+          Rscript -e 'install.packages("renv", repos = "https://cloud.r-project.org")'
+          Rscript -e 'renv::restore()'
+      - name: Deploy via rsconnect
+        working-directory: ./api
+        run: |
+          Rscript -e '
+            install.packages("rsconnect", repos = "https://cloud.r-project.org")
+            rsconnect::addConnectServer(url = Sys.getenv("POSIT_CONNECT_URL"), name = "posit-connect")
+            rsconnect::connectApiUser(account = "rpact-api", server = "posit-connect", apiKey = Sys.getenv("POSIT_CONNECT_API_KEY"))
+            rsconnect::deployAPI(api = ".", server = "posit-connect", appName = "rpact-api", forceUpdate = TRUE)
+          '
+        env:
+          POSIT_CONNECT_URL: ${{ secrets.POSIT_CONNECT_URL }}
+          POSIT_CONNECT_API_KEY: ${{ secrets.POSIT_CONNECT_API_KEY }}

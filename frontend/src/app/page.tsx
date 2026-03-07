@@ -93,7 +93,7 @@ export default function Home() {
     <div className="flex flex-col h-screen">
       <Header />
       <TabNav active={tab} onChange={handleTabChange} />
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
         <SplitPanel
           left={leftPanel[tab]}
           right={<ResultPanel result={result} />}

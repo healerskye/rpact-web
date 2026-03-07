@@ -7,7 +7,7 @@ interface SplitPanelProps {
 
 export function SplitPanel({ left, right }: SplitPanelProps) {
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 h-full overflow-hidden">
       {/* Left: inputs */}
       <aside className="w-full max-w-sm lg:max-w-md xl:max-w-lg shrink-0 overflow-auto border-r border-slate-200 bg-white p-5">
         {left}

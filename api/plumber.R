@@ -1,14 +1,8 @@
 library(plumber)
 library(jsonlite)
+library(rpact)
 
-# Lazy-load rpact so /health responds immediately at startup
-.rpact_loaded <- FALSE
-.ensure_rpact <- function() {
-  if (!.rpact_loaded) {
-    library(rpact)
-    .rpact_loaded <<- TRUE
-  }
-}
+.ensure_rpact <- function() invisible(NULL)
 
 `%||%` <- function(x, y) if (!is.null(x) && length(x) > 0 && !identical(x, "")) x else y
 

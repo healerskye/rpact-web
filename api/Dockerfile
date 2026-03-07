@@ -23,7 +23,7 @@ RUN R -e " \
 
 RUN R -e "if (!requireNamespace('plumber', quietly=TRUE)) stop('plumber not installed') else cat('plumber OK\n')"
 
-RUN R -e "install.packages('rpact', repos='https://cloud.r-project.org'); if (!requireNamespace('rpact', quietly=TRUE)) stop('rpact failed')"
+RUN R -e "install.packages(c('rpact','rappdirs'), repos='https://cloud.r-project.org'); if (!requireNamespace('rpact', quietly=TRUE)) stop('rpact failed')"
 
 # Verify
 RUN R -e "library(plumber); library(rpact); cat('All OK\n')"

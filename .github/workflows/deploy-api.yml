@@ -22,51 +22,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push to GHCR
-        uses: docker/build-push-action@v5
-        with:
-          context: ./api
-          push: true
-          tags: ghcr.io/${{ github.repository }}/rpact-api:latest
-          platforms: linux/amd64
-          no-cache: true
+      - name: Install flyctl
+        run: curl -fsSL https://fly.io/install.sh | sh
 
-      - name: Deploy to Fly.io
+      - name: Destroy existing machines (clear crash loop)
         run: |
-          curl -fsSL https://fly.io/install.sh | sh
           export PATH="$HOME/.fly/bin:$PATH"
-
-          # Destroy all existing machines so flyctl creates a fresh one
-          # (avoids stale machines stuck in crash-restart loop)
           MACHINES=$(flyctl machines list --app rpact-api --json 2>/dev/null | python3 -c "
           import json,sys
           data=json.load(sys.stdin)
-          print(' '.join([m['id'] for m in data]))" 2>/dev/null || echo "")
+          print(' '.join([m['id'] for m in data if m.get('state') != 'destroyed']))" 2>/dev/null || echo "")
           for m in $MACHINES; do
             echo "Destroying machine $m"
             flyctl machines destroy "$m" --app rpact-api --force 2>&1 || true
           done
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-          # Log Docker into GHCR so flyctl can reference the credentials
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build locally and deploy to Fly.io
+        # Build on GitHub Actions (7GB RAM, no timeout) then push directly to Fly.io
+        # This avoids GHCR auth issues - flyctl handles the image transfer itself
+        run: |
+          export PATH="$HOME/.fly/bin:$PATH"
 
-          # Deploy fresh machine with new image
+          # Build the image locally on the GH runner
+          docker build --platform linux/amd64 -t rpact-api:local ./api
+
+          # Use flyctl to deploy from local image (flyctl pushes it to Fly.io registry)
           flyctl deploy \
             --config api/fly.toml \
-            --image ghcr.io/${{ github.repository }}/rpact-api:latest \
+            --local-only \
+            --image rpact-api:local \
             --ha=false \
             --detach \
             2>&1 || true
-          echo "Deploy triggered. Machine starting on Fly.io."
+
+          echo "Deploy triggered."
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

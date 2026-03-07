@@ -38,8 +38,7 @@ jobs:
           context: ./api
           push: true
           tags: ghcr.io/${{ github.repository }}/rpact-api:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
       - name: Deploy to Fly.io
         uses: superfly/flyctl-actions@1.5

@@ -5,7 +5,16 @@ Deploy any R package or local R scripts as a full-stack web application with an 
 ## Usage
 
 ```
-/deploy-r-webapp --package <name|path> --github-token <token> --github-user <user> --vercel-token <token> --fly-token <token>
+/deploy-r-webapp --package <name|path> [--app-name <name>]
+```
+
+Tokens and GitHub username are read automatically from environment variables. Set these in your `~/.zshrc` once:
+
+```bash
+export DEPLOY_GITHUB_TOKEN="ghp_..."
+export DEPLOY_GITHUB_USER="your-username"
+export DEPLOY_VERCEL_TOKEN="..."
+export DEPLOY_FLY_TOKEN="..."
 ```
 
 ## Arguments
@@ -14,11 +23,7 @@ Deploy any R package or local R scripts as a full-stack web application with an 
   - CRAN package name: `rpact`, `survival`, `gsDesign`
   - Local R scripts directory: `./my-scripts/`
   - Local R package source: `./my-package/` or `./my-package.tar.gz`
-- `--github-token` — GitHub personal access token (needs repo + secrets scope)
-- `--github-user` — GitHub username
-- `--vercel-token` — Vercel personal access token
-- `--fly-token` — Fly.io API token (FlyV1 format)
-- `--app-name` — (optional) Override the app name. Default: `{package}`
+- `--app-name` — (optional) Override the app name. Default: derived from package name
 
 ## What Gets Created
 
@@ -33,7 +38,16 @@ Deploy any R package or local R scripts as a full-stack web application with an 
 You are the orchestrator. Run the following 7 agents in sequence. Each agent receives the outputs of previous agents. Stop and report to the user if any agent fails after 3 fix attempts.
 
 Parse the arguments from the user's command first:
-- Extract `--package`, `--github-token`, `--github-user`, `--vercel-token`, `--fly-token`, `--app-name`
+- Extract `--package` and optionally `--app-name` from the command
+- Read tokens from environment variables using Bash:
+  ```bash
+  echo "GITHUB_TOKEN=${DEPLOY_GITHUB_TOKEN:0:8}..."   # verify set
+  echo "GITHUB_USER=$DEPLOY_GITHUB_USER"
+  echo "VERCEL_TOKEN=${DEPLOY_VERCEL_TOKEN:0:8}..."
+  echo "FLY_TOKEN=${DEPLOY_FLY_TOKEN:0:8}..."
+  ```
+  If any env var is empty, stop and tell the user: "Please set DEPLOY_GITHUB_TOKEN, DEPLOY_GITHUB_USER, DEPLOY_VERCEL_TOKEN, DEPLOY_FLY_TOKEN in your ~/.zshrc and restart your shell."
+- Set: `GITHUB_TOKEN=$DEPLOY_GITHUB_TOKEN`, `GITHUB_USER=$DEPLOY_GITHUB_USER`, `VERCEL_TOKEN=$DEPLOY_VERCEL_TOKEN`, `FLY_TOKEN=$DEPLOY_FLY_TOKEN`
 - Derive `APP_NAME`: if `--app-name` provided use it, else use the package name lowercased with non-alphanumeric replaced by `-`
 - Derive `REPO_NAME`: `{APP_NAME}-webapp`
 - Derive `FLY_APP`: `{APP_NAME}-api`
@@ -81,6 +95,7 @@ Parse the arguments from the user's command first:
    - If a parameter accepts a vector of values → mark as `vector` type, use a single representative default for UI
    - If a parameter name is `alternative`, `effect`, `delta`, `theta` → it is the effect size, type numeric
    - Never confuse a parameter that SOUNDS like a boolean with one that IS numeric
+   - If a parameter expects a time vector like `c(0, end)` (e.g. `accrualTime`) → the frontend sends a scalar end value; the API must prepend `0` automatically: `if (length(x) == 1) x <- c(0, x)`
 
 6. Group functions into logical UI categories:
    - Look for common prefixes: `getDesign*`, `getSampleSize*`, `getPower*`, `getSimulation*`
@@ -314,14 +329,16 @@ Copy the exact structure from rpact-web frontend but regenerate these files from
 - Single Calculate/Run button
 
 **`frontend/src/app/page.tsx`**:
-- Holds `result` state at page level
+- Holds results as a **per-tab map** `Partial<Record<TabId, ApiResponse<unknown>>>` — NOT a single result value
+- `onResult` updates only the current tab's entry: `setResults(prev => ({ ...prev, [tab]: r }))`
+- Tab switch does NOT clear results — each tab remembers its last result independently
+- `ResultPanel` receives `results[tab] ?? null` so switching back to a tab shows the previous result
 - `ResultPanel` on the right side — auto-renders from result shape:
   - Scalar metrics as highlight cards (top)
   - Arrays as table rows (middle)
   - Chart of first meaningful array (middle)
   - R code block (bottom)
 - `SplitPanel` with both panels having `overflow-auto` and `min-w-0`
-- Tab change clears result state
 
 **`frontend/src/components/SplitPanel.tsx`**:
 ```tsx

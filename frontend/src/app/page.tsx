@@ -74,10 +74,10 @@ function ResultPanel({ result }: { result: ApiResponse<unknown> | null }) {
 
 export default function Home() {
   const [tab, setTab] = useState<TabId>("ss-means");
-  const [result, setResult] = useState<ApiResponse<unknown> | null>(null);
+  const [results, setResults] = useState<Partial<Record<TabId, ApiResponse<unknown>>>>({});
 
-  const handleTabChange = (t: TabId) => { setTab(t); setResult(null); };
-  const onResult = (r: ApiResponse<unknown>) => setResult(r);
+  const handleTabChange = (t: TabId) => setTab(t);
+  const onResult = (r: ApiResponse<unknown>) => setResults(prev => ({ ...prev, [tab]: r }));
 
   const leftPanel: Record<TabId, React.ReactNode> = {
     "design": <TrialDesign onResult={onResult} />,
@@ -96,7 +96,7 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         <SplitPanel
           left={leftPanel[tab]}
-          right={<ResultPanel result={result} />}
+          right={<ResultPanel result={results[tab] ?? null} />}
         />
       </div>
     </div>

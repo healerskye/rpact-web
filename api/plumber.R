@@ -314,7 +314,11 @@ function(req, res) {
     median1 <- .toNum(body$median1); median2 <- .toNum(body$median2)
     if (!is.null(median1) && !all(is.na(median1)) && (is.null(lambda1) || all(is.na(lambda1)))) lambda1 <- log(2) / median1
     if (!is.null(median2) && !all(is.na(median2)) && (is.null(lambda2) || all(is.na(lambda2)))) lambda2 <- log(2) / median2
-    accrualTime <- .toNum(body$accrualTime); if (is.null(accrualTime) || all(is.na(accrualTime))) accrualTime <- c(0, 12)
+    # accrualTime: frontend may send scalar (e.g. 12) — prepend 0 to make it c(0, 12)
+    accrualTime <- .toNum(body$accrualTime)
+    if (is.null(accrualTime) || all(is.na(accrualTime))) accrualTime <- c(0, 12)
+    if (length(accrualTime) == 1) accrualTime <- c(0, accrualTime)
+    accrualIntensity <- .toNum(body$accrualIntensity) %||% 30
     plannedEvents <- .toNum(body$plannedEvents)
     if (is.null(plannedEvents) || all(is.na(plannedEvents)))
       plannedEvents <- ceiling(seq(50 / d$kMax, 50, length.out = d$kMax))
@@ -323,7 +327,7 @@ function(req, res) {
     r <- getSimulationSurvival(design = d,
                                lambda1 = if (!is.null(lambda1) && !all(is.na(lambda1))) lambda1 else NA_real_,
                                lambda2 = if (!is.null(lambda2) && !all(is.na(lambda2))) lambda2 else NA_real_,
-                               accrualTime = accrualTime, accrualIntensity = .toNum(body$accrualIntensity) %||% 0.1,
+                               accrualTime = accrualTime, accrualIntensity = accrualIntensity,
                                plannedEvents = plannedEvents, eventTime = .toNum(body$eventTime) %||% 12,
                                maxNumberOfIterations = .toInt(body$maxNumberOfIterations, 1000L),
                                seed = seed)

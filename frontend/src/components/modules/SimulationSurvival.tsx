@@ -14,7 +14,7 @@ const DESIGN_TYPES = [
 export function SimulationSurvival({ onResult }: { onResult: (r: ApiResponse<unknown>) => void }) {
   const [params, setParams] = useState({
     kMax: 3, alpha: 0.025, beta: 0.2, typeOfDesign: "OF", sided: 1,
-    lambda1: 0.05, lambda2: 0.08, accrualTime: 12, followUpTime: 6, maxNumberOfIterations: 1000,
+    lambda1: 0.05, lambda2: 0.08, accrualTime: 12, maxNumberOfIterations: 1000,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +49,7 @@ export function SimulationSurvival({ onResult }: { onResult: (r: ApiResponse<unk
         <p className="text-xs font-semibold text-slate-600">Survival Parameters</p>
         <InputField label="λ₁ (treatment hazard rate)" name="lambda1" value={params.lambda1} onChange={set("lambda1")} min={0.001} step={0.001} helpText="Monthly hazard rate in treatment arm" />
         <InputField label="λ₂ (control hazard rate)" name="lambda2" value={params.lambda2} onChange={set("lambda2")} min={0.001} step={0.001} helpText="Monthly hazard rate in control arm" />
-        <InputField label="Accrual Time (months)" name="accrualTime" value={params.accrualTime} onChange={set("accrualTime")} min={0.1} step={1} />
-        <InputField label="Follow-up Time (months)" name="followUpTime" value={params.followUpTime} onChange={set("followUpTime")} min={0.1} step={1} />
+        <InputField label="Accrual Duration (months)" name="accrualTime" value={params.accrualTime} onChange={set("accrualTime")} min={0.1} step={1} helpText="Total accrual period length" />
         <InputField label="Iterations" name="maxNumberOfIterations" value={params.maxNumberOfIterations} onChange={set("maxNumberOfIterations")} min={100} max={10000} step={100} />
       </div>
       <button onClick={run} disabled={loading} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors">

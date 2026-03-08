@@ -30,6 +30,11 @@ library(rpact)
     error = function(e) paste0("# Could not extract R code: ", conditionMessage(e))
   )
 }
+.getFullRCode <- function(design, result, resultPrefix = "") {
+  designCode <- .getRCode(design, "design <- ")
+  resultCode <- .getRCode(result, resultPrefix)
+  paste0(designCode, "\n\n", resultCode)
+}
 
 #* @filter cors
 function(req, res) {
@@ -101,7 +106,7 @@ function(req, res) {
                         alternative = .cleanNum(r$alternative),
                         informationRates = .cleanNum(d$informationRates),
                         criticalValues   = .cleanNum(d$criticalValues)),
-         rCode = .getRCode(r, "sampleSizeMeans <- "))
+         rCode = .getFullRCode(d, r, "sampleSizeMeans <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -125,7 +130,7 @@ function(req, res) {
                         pi1 = .cleanNum(r$pi1), pi2 = .cleanNum(r$pi2),
                         informationRates = .cleanNum(d$informationRates),
                         criticalValues   = .cleanNum(d$criticalValues)),
-         rCode = .getRCode(r, "sampleSizeRates <- "))
+         rCode = .getFullRCode(d, r, "sampleSizeRates <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -163,7 +168,7 @@ function(req, res) {
                         hazardRatio               = .cleanNum(r$hazardRatio),
                         informationRates          = .cleanNum(d$informationRates),
                         criticalValues            = .cleanNum(d$criticalValues)),
-         rCode = .getRCode(r, "sampleSizeSurvival <- "))
+         rCode = .getFullRCode(d, r, "sampleSizeSurvival <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -186,7 +191,7 @@ function(req, res) {
                         expectedNumberOfSubjects = .cleanNum(r$expectedNumberOfSubjects),
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         alternative              = .cleanNum(r$alternative)),
-         rCode = .getRCode(r, "powerMeans <- "))
+         rCode = .getFullRCode(d, r, "powerMeans <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -209,7 +214,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         pi1                      = .cleanNum(r$pi1),
                         pi2                      = .cleanNum(r$pi2)),
-         rCode = .getRCode(r, "powerRates <- "))
+         rCode = .getFullRCode(d, r, "powerRates <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -241,7 +246,7 @@ function(req, res) {
                         expectedNumberOfEvents = .cleanNum(r$expectedNumberOfEvents),
                         rejectPerStage         = .cleanNum(r$rejectPerStage),
                         hazardRatio            = .cleanNum(r$hazardRatio)),
-         rCode = .getRCode(r, "powerSurvival <- "))
+         rCode = .getFullRCode(d, r, "powerSurvival <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -270,7 +275,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         alternative              = .cleanNum(r$alternative),
                         iterations               = .toInt(body$maxNumberOfIterations, 1000L)),
-         rCode = .getRCode(r, "simMeans <- "))
+         rCode = .getFullRCode(d, r, "simMeans <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -299,7 +304,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         pi1 = .cleanNum(r$pi1), pi2 = .cleanNum(r$pi2),
                         iterations = .toInt(body$maxNumberOfIterations, 1000L)),
-         rCode = .getRCode(r, "simRates <- "))
+         rCode = .getFullRCode(d, r, "simRates <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -338,7 +343,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         hazardRatio              = .cleanNum(r$hazardRatio),
                         iterations               = .toInt(body$maxNumberOfIterations, 1000L)),
-         rCode = .getRCode(r, "simSurvival <- "))
+         rCode = .getFullRCode(d, r, "simSurvival <- "))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 

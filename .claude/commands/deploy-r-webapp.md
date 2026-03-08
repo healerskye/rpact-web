@@ -210,6 +210,33 @@ library({package})  # eager load — never lazy load, causes cold start timeouts
 .toBool <- function(x, default = FALSE) { if (is.null(x)) return(default); isTRUE(as.logical(x)) }
 .cleanNum <- function(x) { if (is.null(x)) return(NULL); x <- as.numeric(x); x[is.infinite(x) | is.nan(x)] <- NA_real_; x }
 
+# ── R code helpers — always return full reproducible code ─────────────────────
+# Tries getObjectRCode() if available (e.g. rpact), falls back to reconstructing
+# the call from function name + params manually
+.buildRCall <- function(fn_name, params_list, var_name = "result") {
+  args <- paste(names(params_list), sapply(params_list, deparse), sep = " = ", collapse = ", ")
+  paste0(var_name, " <- ", fn_name, "(", args, ")")
+}
+.getObjCode <- function(obj, prefix = "") {
+  tryCatch(
+    getObjectRCode(obj, leadingArguments = prefix),
+    error = function(e) NULL  # package doesn't support getObjectRCode
+  )
+}
+# For regular endpoints: library + function call
+.getFullRCode <- function(package, fn_name, params_list, obj = NULL, var_name = "result") {
+  code <- .getObjCode(obj, paste0(var_name, " <- "))
+  if (is.null(code)) code <- .buildRCall(fn_name, params_list, var_name)
+  paste0("library(", package, ")\n\n", code)
+}
+# For simulation endpoints: library + set.seed + function call
+.getFullSimRCode <- function(package, fn_name, params_list, obj = NULL, var_name = "result", seed = NA_real_) {
+  actualSeed <- if (!is.na(seed)) as.integer(seed) else sample.int(.Machine$integer.max, 1L)
+  code <- .getObjCode(obj, paste0(var_name, " <- "))
+  if (is.null(code)) code <- .buildRCall(fn_name, params_list, var_name)
+  paste0("library(", package, ")\n\nset.seed(", actualSeed, ")\n\n", code)
+}
+
 # ── CORS filter ────────────────────────────────────────────────────────────────
 #* @filter cors
 function(req, res) {
@@ -227,6 +254,10 @@ Then for each function in SPEC, generate an endpoint:
 - Wrap the R function call in `tryCatch` returning `list(success=FALSE, error=conditionMessage(e))` with `res$status <- 400` on error
 - Return `list(success=TRUE, result=list(...))` with all outputs from spec
 - Apply `.cleanNum()` to all numeric outputs to strip Inf/NaN
+- **Always return full reproducible R code** — every endpoint must include `library({package})` at the top:
+  - Regular endpoints: `rCode = .getFullRCode("{package}", "{r_function}", as.list(body), result, "{id}")`
+  - Simulation endpoints: `rCode = .getFullSimRCode("{package}", "{r_function}", as.list(body), result, "{id}", seed)` — also includes `set.seed()` for exact reproducibility
+  - `.getFullRCode` / `.getFullSimRCode` try `getObjectRCode()` first (works for rpact and similar packages), and fall back to reconstructing the call from params if not supported
 
 Generate `/health` endpoint last — returns only `list(status="ok", time=format(Sys.time(), tz="UTC", usetz=TRUE))` — NO package function calls.
 

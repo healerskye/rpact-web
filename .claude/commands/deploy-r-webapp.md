@@ -2,6 +2,19 @@
 
 Deploy any R package or local R scripts as a full-stack web application with an R Plumber API backend (Fly.io) and Next.js frontend (Vercel), fully automated.
 
+## Before You Start
+
+This skill runs fully automatically and will create files, run shell commands, and call external APIs without asking for confirmation at each step.
+
+**Required**: Start Claude Code with bypass permissions mode before invoking this skill:
+
+```bash
+claude --dangerously-skip-permissions
+```
+
+If you are not in bypass permissions mode, stop and tell the user:
+> "Please restart Claude Code with `claude --dangerously-skip-permissions` and run this skill again. This is required for the fully automated pipeline to work without interruptions."
+
 ## Usage
 
 ```

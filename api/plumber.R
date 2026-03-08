@@ -35,6 +35,12 @@ library(rpact)
   resultCode <- .getRCode(result, resultPrefix)
   paste0(designCode, "\n\n", resultCode)
 }
+.getFullSimRCode <- function(design, result, resultPrefix = "", seed = NA_real_) {
+  designCode <- .getRCode(design, "design <- ")
+  resultCode <- .getRCode(result, resultPrefix)
+  actualSeed <- if (!is.na(seed)) as.integer(seed) else sample.int(.Machine$integer.max, 1L)
+  paste0("library(rpact)\n\nset.seed(", actualSeed, ")\n\n", designCode, "\n\n", resultCode)
+}
 
 #* @filter cors
 function(req, res) {
@@ -275,7 +281,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         alternative              = .cleanNum(r$alternative),
                         iterations               = .toInt(body$maxNumberOfIterations, 1000L)),
-         rCode = .getFullRCode(d, r, "simMeans <- "))
+         rCode = .getFullSimRCode(d, r, "simMeans <- ", seed))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -304,7 +310,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         pi1 = .cleanNum(r$pi1), pi2 = .cleanNum(r$pi2),
                         iterations = .toInt(body$maxNumberOfIterations, 1000L)),
-         rCode = .getFullRCode(d, r, "simRates <- "))
+         rCode = .getFullSimRCode(d, r, "simRates <- ", seed))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
@@ -343,7 +349,7 @@ function(req, res) {
                         rejectPerStage           = .cleanNum(r$rejectPerStage),
                         hazardRatio              = .cleanNum(r$hazardRatio),
                         iterations               = .toInt(body$maxNumberOfIterations, 1000L)),
-         rCode = .getFullRCode(d, r, "simSurvival <- "))
+         rCode = .getFullSimRCode(d, r, "simSurvival <- ", seed))
   }, error = function(e) { res$status <- 400; list(success = FALSE, error = conditionMessage(e)) })
 }
 
